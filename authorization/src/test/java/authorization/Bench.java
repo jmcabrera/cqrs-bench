@@ -14,8 +14,8 @@ public abstract class Bench {
 	protected static final int	PARALLELISM	= 8;
 
 	protected static enum TestType {
-		CARD_CREATION(1000, "card creations"), //
-		AUTHORIZATION(10000, "authorizations");
+		CARD_CREATION(10000, "card creations"), //
+		AUTHORIZATION(100000, "authorizations");
 
 		public final int	nb;
 		private String		name;
@@ -32,8 +32,8 @@ public abstract class Bench {
 	}
 
 	static {
-		System.out.printf("## Creating %,d cards\n", CARD_CREATION.nb);
-		System.out.printf("## Issuing  %,d authorizations\n", AUTHORIZATION.nb);
+		System.out.printf("## Creating %,8d cards\n", CARD_CREATION.nb);
+		System.out.printf("## Issuing  %,8d authorizations\n", AUTHORIZATION.nb);
 		System.out.printf("## For JDBC ONLY: Using %,d threads\n", PARALLELISM);
 		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
 			@Override

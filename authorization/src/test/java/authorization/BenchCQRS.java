@@ -46,6 +46,10 @@ public class BenchCQRS extends Bench {
 			return false;
 		}
 
+		@Override
+		public void close() {
+		}
+
 	}
 
 	@Test

@@ -17,7 +17,9 @@ public class EventStore implements Listener {
 
 	static {
 		try {
-			PW = new PrintWriter(new FileWriter(new File("store.json")), true);
+			File file = new File("store.json");
+			System.out.println("Wrinting to: " + file.getAbsoluteFile());
+			PW = new PrintWriter(new FileWriter(file), true);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -38,6 +40,11 @@ public class EventStore implements Listener {
 	@Override
 	public boolean concurrent() {
 		return false;
+	}
+
+	@Override
+	public void close() {
+		PW.close();
 	}
 
 }

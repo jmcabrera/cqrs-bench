@@ -67,6 +67,14 @@ public class EventBus {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
+		for (Listener list : LISTENERS) {
+			try {
+				list.close();
+			} catch (Throwable t) {
+				t.printStackTrace();
+			}
+		}
+		LISTENERS.clear();
 	}
 
 }

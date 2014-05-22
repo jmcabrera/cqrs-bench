@@ -6,4 +6,6 @@ public interface Listener {
 
 	public boolean concurrent();
 
+	public void close();
+
 }
