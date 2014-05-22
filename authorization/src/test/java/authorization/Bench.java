@@ -9,8 +9,6 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import authorization.Bench.TestType;
-
 public abstract class Bench {
 
 	protected static final int	PARALLELISM	= 8;
@@ -76,58 +74,57 @@ public abstract class Bench {
 		bucket.add(testName, duration);
 	}
 
-}
+	private static final class Bucket {
 
-final class Bucket {
+		private static final class Point implements Comparable<Point> {
+			final String	name;
+			final float		time;
 
-	private static final class Point implements Comparable<Point> {
-		public final String	name;
-		public final float	time;
-
-		public Point(String name, float duration) {
-			this.name = name;
-			this.time = duration;
-		}
-
-		@Override
-		public int compareTo(Point o) {
-			return o.time > time ? -1 : (o.time == time ? 0 : 1);
-		}
-	}
-
-	private final SortedSet<Point>	content	= new TreeSet<>();
-	private final TestType					type;
-
-	Bucket(TestType type) {
-		this.type = type;
-	}
-
-	void add(String name, float duration) {
-		content.add(new Point(name, duration));
-	}
-
-	public String toString() {
-		StringBuilder sb = new StringBuilder("For ").append(type).append(":\t");
-		if (content.isEmpty()) {
-			sb.append("No data");
-		} else {
-			float ref = -1;
-			for (Point p : content) {
-				sb.append(p.name);
-				if (-1 == ref)
-					ref = content.first().time;
-				else
-					sb.append(" (").append(rel(p.time, ref)).append("x)");
-				sb.append("  <  ");
+			Point(String name, float duration) {
+				this.name = name;
+				this.time = duration;
 			}
-			sb.delete(sb.length() - 3, sb.length());
-		}
-		return sb.toString();
-	}
 
-	private String rel(float time, float ref) {
-		try (Formatter f = new Formatter()) {
-			return f.format("%,5.2f", (time / ref)).out().toString();
+			@Override
+			public int compareTo(Point o) {
+				return o.time > time ? -1 : (o.time == time ? 0 : 1);
+			}
+		}
+
+		private final SortedSet<Point>	content	= new TreeSet<>();
+		private final TestType					type;
+
+		Bucket(TestType type) {
+			this.type = type;
+		}
+
+		void add(String name, float duration) {
+			content.add(new Point(name, duration));
+		}
+
+		public String toString() {
+			StringBuilder sb = new StringBuilder("For ").append(type).append(":\t");
+			if (content.isEmpty()) {
+				sb.append("No data");
+			} else {
+				float ref = -1;
+				for (Point p : content) {
+					sb.append(p.name);
+					if (-1 == ref)
+						ref = content.first().time;
+					else
+						sb.append(" (").append(rel(p.time, ref)).append("x)");
+					sb.append("  <  ");
+				}
+				sb.delete(sb.length() - 3, sb.length());
+			}
+			return sb.toString();
+		}
+
+		private String rel(float time, float ref) {
+			try (Formatter f = new Formatter()) {
+				return f.format("%,8.2f", (time / ref)).out().toString();
+			}
 		}
 	}
 }
