@@ -11,20 +11,20 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 
 public class EventStore implements Listener {
 
-	static final PrintWriter	PW;
-	static final ObjectMapper	MAPPER;
-	static int								sequence	= 0;
-
+	private static final ObjectMapper	MAPPER		= new ObjectMapper();
 	static {
+		MAPPER.configure(SerializationFeature.WRAP_ROOT_VALUE, true);
+	}
+
+	private final PrintWriter					PW;
+	int																sequence	= 0;
+
+	public EventStore() {
 		try {
-			File file = new File("store.json");
-			PW = new PrintWriter(new FileWriter(file), true);
+			PW = new PrintWriter(new FileWriter(new File("store.json")), true);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-
-		MAPPER = new ObjectMapper();
-		MAPPER.configure(SerializationFeature.WRAP_ROOT_VALUE, true);
 	}
 
 	@Override
@@ -44,6 +44,7 @@ public class EventStore implements Listener {
 	@Override
 	public void close() {
 		PW.close();
+		sequence = 0;
 	}
 
 }

@@ -1,29 +1,26 @@
-package io.cqrs.bench.jdbc;
+package io.cqrs.bench.runner;
 
 import io.cqrs.bench.api.CardService;
 import io.cqrs.bench.api.CreateCard;
 import io.cqrs.bench.api.DoAuthorization;
 
-public class JDBCCardService implements CardService {
+public class EmptySyncCardService implements CardService, Empty {
 
 	@Override
 	public void start() {}
 
 	@Override
 	public String handle(CreateCard cc) {
-		Card c = new Card(cc.getPan(), cc.getEmbossedDate());
-		return CardManager.createCard(c);
+		return "00";
 	}
 
 	@Override
 	public String handle(DoAuthorization da) {
-		return CardManager.authorization(da.getPan(), da.getEmbossedDate(), da.getAmount());
+		return "00";
 	}
 
 	@Override
-	public void clear() {
-		CardRepository.clear();
-	}
+	public void clear() {}
 
 	@Override
 	public void stop() {}
@@ -35,6 +32,7 @@ public class JDBCCardService implements CardService {
 
 	@Override
 	public String getName() {
-		return "JDBC";
+		return "sEMPTY";
 	}
+
 }

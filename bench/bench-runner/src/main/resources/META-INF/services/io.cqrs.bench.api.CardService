@@ -1,0 +1,2 @@
+io.cqrs.bench.runner.EmptyAsyncCardService
+io.cqrs.bench.runner.EmptySyncCardService

@@ -20,21 +20,20 @@ public class CardRepository extends Repository {
 		CACHE.clear();
 		try (Connection c = getConnection()) {
 			try (Statement st = c.createStatement()) {
-				st.execute("DROP TABLE card");
+				st.execute("DROP TABLE card;");
 				c.commit();
 			} catch (SQLException e) {
 				c.rollback();
 			}
-		} catch (SQLException e) {
-		}
+		} catch (SQLException e) {}
 		try (Connection c = getConnection()) {
 			try (Statement st = c.createStatement()) {
 				st.execute("CREATE TABLE card (" //
-						+ "  pan VARCHAR(19) NOT NULL," //
-						+ "  embossed_date varchar(4) NOT NULL," //
-						+ "  authorized_amount bigint(20) DEFAULT 0," //
-						+ "  PRIMARY KEY (pan, embossed_date)" //
-						+ ")");
+						+ " pan VARCHAR(19) NOT NULL," //
+						+ " embossed_date varchar(4) NOT NULL," //
+						+ " authorized_amount bigint(20) DEFAULT 0," //
+						+ " PRIMARY KEY (pan, embossed_date)" //
+						+ ");");
 				c.commit();
 			} catch (SQLException e) {
 				c.rollback();
@@ -47,11 +46,9 @@ public class CardRepository extends Repository {
 
 	public static Card find(String pan, String embossedDate) {
 		Card card;
-		if (null != (card = CACHE.get(pan + "/" + embossedDate))) {
-			return card;
-		}
+		if (null != (card = CACHE.get(pan + "/" + embossedDate))) { return card; }
 		try (Connection c = getConnection()) {
-			try (PreparedStatement ps = c.prepareStatement("select authorized_amount from card where pan=? and embossed_date=?")) {
+			try (PreparedStatement ps = c.prepareStatement("select authorized_amount from card where pan=? and embossed_date=?;")) {
 				ps.setString(1, pan);
 				ps.setString(2, embossedDate);
 				ResultSet res = ps.executeQuery();
@@ -72,7 +69,7 @@ public class CardRepository extends Repository {
 	public static void store(Card card) {
 		CACHE.remove(card.getPan() + "/" + card.getEmbossedDate());
 		try (Connection c = getConnection()) {
-			try (PreparedStatement ps = c.prepareStatement("insert into card values(?,?,?)")) {
+			try (PreparedStatement ps = c.prepareStatement("insert into card values(?,?,?);")) {
 				ps.setString(1, card.getPan());
 				ps.setString(2, card.getEmbossedDate());
 				ps.setLong(3, card.getAuthorizedAmount());
@@ -90,7 +87,7 @@ public class CardRepository extends Repository {
 	public static void update(Card card) {
 		CACHE.remove(card.getPan() + "/" + card.getEmbossedDate());
 		try (Connection c = getConnection()) {
-			try (PreparedStatement ps = c.prepareStatement("update card set authorized_amount=? where pan=? and embossed_date=?")) {
+			try (PreparedStatement ps = c.prepareStatement("update card set authorized_amount=? where pan=? and embossed_date=?;")) {
 				ps.setLong(1, card.getAuthorizedAmount());
 				ps.setString(2, card.getPan());
 				ps.setString(3, card.getEmbossedDate());

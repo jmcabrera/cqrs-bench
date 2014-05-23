@@ -1,7 +1,6 @@
 package io.cqrs.bench.jdbc;
 
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Properties;
 
@@ -13,27 +12,26 @@ public abstract class Repository {
 	static BasicDataSource	DS;
 
 	static {
+		try {
+			Repository.class.getClassLoader().loadClass("org.h2.Driver");
+		} catch (ClassNotFoundException e) {
+			throw new RuntimeException(e);
+		}
 		Properties props = new Properties();
-		props.put("url", "jdbc:mysql://localhost/techforum");
+		props.put("url", "jdbc:h2:mem:");
 		props.put("username", "root");
 		props.put("password", "root");
 
 		try {
 			DS = BasicDataSourceFactory.createDataSource(props);
 			DS.setDefaultAutoCommit(false);
-			DS.setDefaultTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
-			DS.setPoolPreparedStatements(true);
+			DS.setPoolPreparedStatements(false);
+			DS.setMaxTotal(10);
+			DS.setTestOnBorrow(true);
+			DS.setValidationQuery("SELECT 1");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-	}
-
-	public static void main(String[] args) throws SQLException {
-		ResultSet rs = getConnection().createStatement().executeQuery("select 1 from dual");
-		while (rs.next()) {
-			System.out.println(rs.getInt(1));
-		}
-
 	}
 
 	public static Connection getConnection() throws SQLException {

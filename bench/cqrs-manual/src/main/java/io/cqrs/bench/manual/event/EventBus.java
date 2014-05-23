@@ -1,112 +1,56 @@
 package io.cqrs.bench.manual.event;
 
-import java.util.Iterator;
-import java.util.List;
 import java.util.ServiceLoader;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
-public class EventBus {
+public abstract class EventBus {
 
-	private static enum State {
-		STARTED, STARTING, STOPPING, STOPPED;
+	private static final EventBus	IMPL;
+	static {
+		EventBus instance = null;
+		for (EventBus eb : ServiceLoader.load(EventBus.class))
+			if (null == instance)
+				instance = eb;
+			else {
+				String err = "More than one event bus implementation was provided...\n";
+				for (EventBus a : ServiceLoader.load(EventBus.class))
+					err += "  - " + a.getClass().getName() + "\n";
+				throw new RuntimeException(err);
+			}
+		if (null == instance)
+			throw new RuntimeException("" //
+					+ "I need an implementation for Eventbus (exactly one) but I found none.\n" //
+					+ "Give me one in a /META-INF/services/" + EventBus.class.getName() + "" //
+					+ "somewhere in the classpath.");
+		IMPL = instance;
 	}
 
-	private static final AtomicReference<State>		STATE							= new AtomicReference<>(State.STOPPED);
-
-	private static final ServiceLoader<Listener>	SERVICE_LOADER		= ServiceLoader.load(Listener.class);
-
-	private static final List<Listener>						LISTENERS					= new CopyOnWriteArrayList<>();
-
-	// concurrent listeners can handle events concurrently
-	private static ExecutorService								CONCURRENT_ES			= null;
-
-	// non concurrent listeners needs events always coming from the same thread
-	private static ExecutorService								NON_CONCURRENT_ES	= null;
-
 	public static void register(Listener listener) {
-		LISTENERS.add(listener);
+		IMPL.doRegister(listener);
 	}
 
 	public static void unregister(Listener listener) {
-		LISTENERS.remove(listener);
+		IMPL.doUnregister(listener);
 	}
 
 	public static void fire(Event event) {
-		if (State.STOPPED == STATE.get()) {
-			start();
-		}
-		for (Listener l : LISTENERS)
-			(l.concurrent() ? CONCURRENT_ES : NON_CONCURRENT_ES).submit(new Task(l, event));
-	}
-
-	private static final class Task implements Runnable {
-
-		private Listener	l;
-		private Event			e;
-
-		public Task(Listener l, Event e) {
-			this.l = l;
-			this.e = e;
-		}
-
-		@Override
-		public void run() {
-			l.handle(e);
-		}
-
+		IMPL.doFire(event);
 	}
 
 	public static void stop() {
-		switch (STATE.get()) {
-		case STOPPED:
-			return;
-		case STARTED:
-			STATE.set(State.STOPPING);
-			CONCURRENT_ES.shutdown();
-			NON_CONCURRENT_ES.shutdown();
-			try {
-				CONCURRENT_ES.awaitTermination(100, TimeUnit.SECONDS);
-				NON_CONCURRENT_ES.awaitTermination(100, TimeUnit.SECONDS);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-			for (Listener list : LISTENERS) {
-				try {
-					list.close();
-				} catch (Throwable t) {
-					t.printStackTrace();
-				}
-			}
-			LISTENERS.clear();
-			STATE.set(State.STOPPED);
-		default:
-			stop();
-			return;
-		}
+		IMPL.doStop();
 	}
 
-	public static synchronized void start() {
-		switch (STATE.get()) {
-		case STARTED:
-			return;
-		case STOPPED:
-			STATE.set(State.STARTING);
-			CONCURRENT_ES = Executors.newFixedThreadPool(4);
-			NON_CONCURRENT_ES = Executors.newSingleThreadExecutor();
-			SERVICE_LOADER.reload();
-			Iterator<Listener> it = SERVICE_LOADER.iterator();
-			while (it.hasNext()) {
-				register(it.next());
-			}
-			STATE.set(State.STARTED);
-			return;
-		default:
-			start();
-			return;
-		}
+	public static void start() {
+		IMPL.doStart();
 	}
+
+	protected abstract void doRegister(Listener listener);
+
+	protected abstract void doUnregister(Listener listener);
+
+	protected abstract void doFire(Event event);
+
+	protected abstract void doStop();
+
+	protected abstract void doStart();
 }

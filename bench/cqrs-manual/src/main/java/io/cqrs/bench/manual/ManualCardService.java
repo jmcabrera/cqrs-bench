@@ -36,18 +36,18 @@ public class ManualCardService implements CardService {
 
 		void setTarget(int target) {
 			this.target = target;
+			if (target == count)
+				latch.countDown();
 		}
 
 		public void await() {
 			try {
 				latch.await();
-			} catch (InterruptedException e) {
-			}
+			} catch (InterruptedException e) {}
 		}
 
 		@Override
-		public void close() {
-		}
+		public void close() {}
 
 	}
 
@@ -74,6 +74,8 @@ public class ManualCardService implements CardService {
 
 	@Override
 	public void clear() {
+		stop();
+		start();
 		CardRepository.clear();
 	}
 

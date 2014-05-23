@@ -19,6 +19,8 @@ public class CardRepository {
 	}
 
 	public static void update(Card card) throws UnknownCard {
+		if (null == card)
+			throw new UnknownCard(null);
 		String key = card.getPan() + "/" + card.getEmbossedDate();
 		if (!REPO.containsKey(key))
 			throw new UnknownCard(key);
