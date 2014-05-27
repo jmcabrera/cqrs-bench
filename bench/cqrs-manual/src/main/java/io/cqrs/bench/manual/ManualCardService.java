@@ -7,6 +7,7 @@ import io.cqrs.bench.manual.command.CardCommandHandler;
 import io.cqrs.bench.manual.domain.CardRepository;
 import io.cqrs.bench.manual.event.Event;
 import io.cqrs.bench.manual.event.EventBus;
+import io.cqrs.bench.manual.event.EventStore;
 import io.cqrs.bench.manual.event.Listener;
 
 import java.util.concurrent.CountDownLatch;
@@ -36,8 +37,7 @@ public class ManualCardService implements CardService {
 
 		void setTarget(int target) {
 			this.target = target;
-			if (target == count)
-				latch.countDown();
+			if (target == count) latch.countDown();
 		}
 
 		public void await() {
@@ -56,7 +56,8 @@ public class ManualCardService implements CardService {
 
 	@Override
 	public void start() {
-		EventBus.start();
+		// EventBus.start();
+		list.setTarget(-1);
 		EventBus.register(list);
 	}
 
@@ -74,15 +75,15 @@ public class ManualCardService implements CardService {
 
 	@Override
 	public void clear() {
-		stop();
-		start();
 		CardRepository.clear();
+		EventStore.restart();
 	}
 
 	@Override
 	public void stop() {
 		list.setTarget(target);
 		list.await();
+		CardRepository.clear();
 		EventBus.stop();
 	}
 

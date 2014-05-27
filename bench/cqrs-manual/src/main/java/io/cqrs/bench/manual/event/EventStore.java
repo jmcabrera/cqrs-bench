@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,26 +12,29 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 
 public class EventStore implements Listener {
 
+	private static final EventStore		INSTANCE	= new EventStore();
+
 	private static final ObjectMapper	MAPPER		= new ObjectMapper();
 	static {
 		MAPPER.configure(SerializationFeature.WRAP_ROOT_VALUE, true);
+		EventBus.register(INSTANCE);
 	}
 
-	private final PrintWriter					PW;
+	private PrintWriter								pw				= null;
 	int																sequence	= 0;
 
-	public EventStore() {
-		try {
-			PW = new PrintWriter(new FileWriter(new File("store.json")), true);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+	private EventStore() {
+		_restart();
 	}
+
+	private final AtomicBoolean	closed	= new AtomicBoolean(Boolean.FALSE);
 
 	@Override
 	public void handle(Event event) {
+		if (closed.get()) throw new RuntimeException("Event store closed");
+
 		try {
-			PW.println((sequence++) + MAPPER.writeValueAsString(event));
+			pw.println((sequence++) + MAPPER.writeValueAsString(event));
 		} catch (JsonProcessingException e) {
 			throw new RuntimeException(e);
 		}
@@ -43,8 +47,26 @@ public class EventStore implements Listener {
 
 	@Override
 	public void close() {
-		PW.close();
-		sequence = 0;
+		closed.set(true);
+		if (null != pw) {
+			pw.close();
+		}
+	}
+
+	public static void restart() {
+		INSTANCE._restart();
+	}
+
+	private void _restart() {
+		closed.set(true);
+		close();
+		try {
+			pw = new PrintWriter(new FileWriter(new File("store.json")), false);
+			sequence = 0;
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		closed.set(false);
 	}
 
 }

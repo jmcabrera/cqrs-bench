@@ -18,4 +18,8 @@ public class CreateCard {
 		return embossedDate;
 	}
 
+	@Override
+	public String toString() {
+		return this.getClass().getSimpleName() + "(pan='" + pan + "', embossedDate='" + embossedDate + "')";
+	}
 }

@@ -29,60 +29,62 @@ public class BencherTest {
 				+ "-------------------------------------------------------");
 		System.out.println("");
 
-		warmup();
-
-		round(1000, 10000);
-		round(10000, 100000);
-		round(100000, 1000000);
-		close();
-	}
-
-	private static void warmup() {
-		// Planning operations
-		final Operation[] creations = planCardCreations(1000);
-
-		final Operation[] authorizations = planAuthorizations(1000, 1000);
-
-		System.out.println("\n---- WARMUP --------------------------------------------------------------");
 		for (CardService cs : ServiceLoader.load(CardService.class)) {
-			run(cs, creations, authorizations);
+			cs.start();
+			System.out.printf("\n---- %8s ------------------------------------------------------------\n", cs.getName());
+			System.out.print("<< warmup");
+			warmup(cs);
+			System.out.println(" >>");
+			round(cs, 1000, 1000);
+			round(cs, 10000, 10000);
+			round(cs, 100000, 100000);
+			cs.stop();
 		}
-		reset();
+		close();
+
+		System.exit(0);
 	}
 
-	private static void round(int nbCards, int nbAuthorizations) {
-		System.out.printf("\n---- Running %,8d creations and %,8d authorizations ---\n", nbCards, nbAuthorizations);
+	private static void warmup(CardService cs) {
+		// Planning operations
+		final Operation[] creations = planCardCreations(10000);
+
+		final Operation[] authorizations = planAuthorizations(10000, 10000);
+
+		run(cs, creations, authorizations, cs instanceof Empty);
+	}
+
+	private static void round(CardService cs, int nbCards, int nbAuthorizations) {
+		System.gc();
+
 		// Planning operations
 		final Operation[] creations = planCardCreations(nbCards);
 
 		final Operation[] authorizations = planAuthorizations(nbAuthorizations, nbCards);
 
-		for (CardService cs : ServiceLoader.load(CardService.class))
-			run(cs, creations, authorizations);
+		run(cs, creations, authorizations, true);
 	}
 
-	private static void run(CardService cs, Operation[] creations, Operation[] authorizations) {
-		cs.start();
+	private static void run(CardService cs, Operation[] creations, Operation[] authorizations, boolean track) {
 		cs.clear();
 		if (cs.parallel()) {
-			ExecutorService es = Executors.newFixedThreadPool(8);
-			start(cs.getName(), "card creation " + creations.length, cs instanceof Empty);
+			ExecutorService es = Executors.newFixedThreadPool(4);
+			if (track) start(cs.getName(), "card creation " + creations.length, cs instanceof Empty);
 			runAsync(cs, es, creations);
-			end();
-			start(cs.getName(), "authorization " + authorizations.length, cs instanceof Empty);
+			if (track) end();
+			if (track) start(cs.getName(), "authorization " + authorizations.length, cs instanceof Empty);
 			runAsync(cs, es, authorizations);
-			end();
+			if (track) end();
 			List<Runnable> remains = es.shutdownNow();
 			if (null == remains || !remains.isEmpty()) { throw new RuntimeException("should remain nothing in the ES ?!?"); }
 		} else {
-			start(cs.getName(), "card creation " + creations.length, cs instanceof Empty);
+			if (track) start(cs.getName(), "card creation " + creations.length, cs instanceof Empty);
 			runSync(cs, creations);
-			end();
-			start(cs.getName(), "authorization " + authorizations.length, cs instanceof Empty);
+			if (track) end();
+			if (track) start(cs.getName(), "authorization " + authorizations.length, cs instanceof Empty);
 			runSync(cs, authorizations);
-			end();
+			if (track) end();
 		}
-		cs.stop();
 	}
 
 	private static void runSync(CardService cs, Operation[] operations) {
@@ -142,8 +144,7 @@ public class BencherTest {
 		System.out.printf("%7s %-25s: %,15.2f ms\n", TEST_NAME, TYPE, duration);
 		if (!SKIP) {
 			Bucket bucket = BUCKETS.get(TYPE);
-			if (null == bucket)
-				BUCKETS.put(TYPE, bucket = new Bucket(TYPE));
+			if (null == bucket) BUCKETS.put(TYPE, bucket = new Bucket(TYPE));
 			bucket.add(TEST_NAME, duration);
 		}
 	}
@@ -156,8 +157,7 @@ public class BencherTest {
 		for (CardService cs : ServiceLoader.load(CardService.class)) {
 			String name = cs.getName();
 			List<CardService> list = css.get(name);
-			if (null == list)
-				css.put(name, list = new ArrayList<>());
+			if (null == list) css.put(name, list = new ArrayList<>());
 			list.add(cs);
 		}
 		if (css.isEmpty()) {
@@ -213,8 +213,13 @@ public class BencherTest {
 				@Override
 				public void run() {
 					DoAuthorization op = new DoAuthorization("" + (j % nbCards), "0514", 1);
-					String resp = serv.handle(op);
-					if (!"00".equals(resp)) { throw new RuntimeException("Got '" + resp + "' instead of '00' while '" + op + "'"); }
+					String resp = null;
+					try {
+						resp = serv.handle(op);
+					} catch (Throwable t) {
+						throw new RuntimeException("An error has occured while handling '" + op + "'", t);
+					}
+					if (!"00".equals(resp)) throw new RuntimeException("Got '" + resp + "' instead of '00' while '" + op + "'");
 				}
 			};
 		}
@@ -229,8 +234,13 @@ public class BencherTest {
 				@Override
 				public void run() {
 					CreateCard op = new CreateCard("" + j, "0514");
-					String resp = serv.handle(op);
-					if (!"00".equals(resp)) { throw new RuntimeException("Got '" + resp + "' instead of '00' while '" + op + "'"); }
+					String resp = null;
+					try {
+						resp = serv.handle(op);
+					} catch (Throwable t) {
+						throw new RuntimeException("An error has occured while handling '" + op + "'", t);
+					}
+					if (!"00".equals(resp)) throw new RuntimeException("Got '" + resp + "' instead of '00' while '" + op + "'");
 				}
 			};
 		}

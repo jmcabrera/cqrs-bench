@@ -23,5 +23,7 @@
     <module>bench-runner</module>
     <module>bench-api</module>
     <module>jdbc</module>
+    <module>jpa</module>
+    <module>akka</module>
   </modules>
 </project>

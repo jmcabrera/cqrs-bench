@@ -26,4 +26,9 @@ public class DoAuthorization {
 		return amount;
 	}
 
+	@Override
+	public String toString() {
+		return this.getClass().getSimpleName() + "(pan='" + pan + "', embossedDate='" + embossedDate + "', amount='" + amount + "')";
+	}
+
 }
