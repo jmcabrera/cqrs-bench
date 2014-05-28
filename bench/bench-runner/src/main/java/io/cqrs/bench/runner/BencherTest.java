@@ -5,10 +5,12 @@ import io.cqrs.bench.api.CreateCard;
 import io.cqrs.bench.api.DoAuthorization;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Formatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.ServiceLoader;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -17,7 +19,14 @@ import java.util.concurrent.Future;
 
 public class BencherTest {
 
+	private static final int							PARALLELISM	= 4;
+
+	private static final Random						RANDOM			= new Random(0);
+
+	private static final ExecutorService	ES					= Executors.newFixedThreadPool(PARALLELISM);
+
 	public static void main(String[] args) {
+
 		checkImplementations();
 
 		System.out.println("" //
@@ -35,9 +44,8 @@ public class BencherTest {
 			System.out.print("<< warmup");
 			warmup(cs);
 			System.out.println(" >>");
-			round(cs, 1000, 1000);
-			round(cs, 10000, 10000);
-			round(cs, 100000, 100000);
+			createCards(cs, 10000);
+			doAuthors(cs, 10000, 1000000);
 			cs.stop();
 		}
 		close();
@@ -48,41 +56,48 @@ public class BencherTest {
 	private static void warmup(CardService cs) {
 		// Planning operations
 		final Operation[] creations = planCardCreations(10000);
+		run(cs, "warmup", creations, false);
 
 		final Operation[] authorizations = planAuthorizations(10000, 10000);
+		run(cs, "warmup", authorizations, false);
+		System.out.flush();
 
-		run(cs, creations, authorizations, cs instanceof Empty);
+		cs.clear();
 	}
 
-	private static void round(CardService cs, int nbCards, int nbAuthorizations) {
-		System.gc();
+	private static void createCards(CardService cs, int nbCards) {
 
 		// Planning operations
-		final Operation[] creations = planCardCreations(nbCards);
+		Operation[] creations = planCardCreations(nbCards);
 
-		final Operation[] authorizations = planAuthorizations(nbAuthorizations, nbCards);
+		System.gc();
 
-		run(cs, creations, authorizations, true);
+		run(cs, "card creation", creations, true);
 	}
 
-	private static void run(CardService cs, Operation[] creations, Operation[] authorizations, boolean track) {
-		cs.clear();
+	private static void doAuthors(CardService cs, int nbCards, int nbAuthorizations) {
+
+		// Planning operations
+		Operation[] authorizations = planAuthorizations(nbAuthorizations, nbCards);
+
+		System.gc();
+
+		run(cs, "authorization", authorizations, true);
+	}
+
+	private static void run(CardService cs, String type, Operation[] operations, boolean track) {
+		int size = 0;
+		{
+			for (Operation op : operations)
+				size += op.getSize();
+		}
 		if (cs.parallel()) {
-			ExecutorService es = Executors.newFixedThreadPool(4);
-			if (track) start(cs.getName(), "card creation " + creations.length, cs instanceof Empty);
-			runAsync(cs, es, creations);
+			if (track) start(cs.getName(), type + " " + size, cs instanceof Empty);
+			runAsync(cs, ES, operations);
 			if (track) end();
-			if (track) start(cs.getName(), "authorization " + authorizations.length, cs instanceof Empty);
-			runAsync(cs, es, authorizations);
-			if (track) end();
-			List<Runnable> remains = es.shutdownNow();
-			if (null == remains || !remains.isEmpty()) { throw new RuntimeException("should remain nothing in the ES ?!?"); }
 		} else {
-			if (track) start(cs.getName(), "card creation " + creations.length, cs instanceof Empty);
-			runSync(cs, creations);
-			if (track) end();
-			if (track) start(cs.getName(), "authorization " + authorizations.length, cs instanceof Empty);
-			runSync(cs, authorizations);
+			if (track) start(cs.getName(), type + " " + size, cs instanceof Empty);
+			runSync(cs, operations);
 			if (track) end();
 		}
 	}
@@ -130,11 +145,6 @@ public class BencherTest {
 		System.out.println();
 		for (Bucket b : BUCKETS.values())
 			System.out.println(b);
-		BUCKETS.clear();
-		System.gc();
-	}
-
-	private static void reset() {
 		BUCKETS.clear();
 		System.gc();
 	}
@@ -199,6 +209,8 @@ public class BencherTest {
 	private static abstract class Operation implements Runnable {
 		protected CardService	serv;
 
+		abstract int getSize();
+
 		void setCardService(CardService serv) {
 			this.serv = serv;
 		}
@@ -206,45 +218,123 @@ public class BencherTest {
 	}
 
 	private static Operation[] planAuthorizations(final int nbAuthorizations, final int nbCards) {
-		final Operation[] authorizations = new Operation[nbAuthorizations];
+
+		final int[] split = split(nbAuthorizations, PARALLELISM);
+		final int[][] cards = new int[split.length][];
+		{
+			List<Integer> lcards = new ArrayList<>(nbAuthorizations);
+			for (int i = 0; i < nbAuthorizations; i++) {
+				lcards.add((i % nbCards));
+			}
+			Collections.shuffle(lcards, RANDOM);
+			int next = 0;
+			for (int i = 0; i < cards.length; i++) {
+				cards[i] = new int[split[i]];
+				for (int j = 0; j < cards[i].length; j++) {
+					cards[i][j] = lcards.get(next++);
+				}
+			}
+			lcards.clear();
+			lcards = null;
+		}
+
+		final Operation[] authorizations = new Operation[cards.length];
 		for (int i = 0; i < authorizations.length; i++) {
-			final int j = i;
+			final int[] work = cards[i];
 			authorizations[i] = new Operation() {
-				@Override
 				public void run() {
-					DoAuthorization op = new DoAuthorization("" + (j % nbCards), "0514", 1);
-					String resp = null;
-					try {
-						resp = serv.handle(op);
-					} catch (Throwable t) {
-						throw new RuntimeException("An error has occured while handling '" + op + "'", t);
+					for (int w : work) {
+						DoAuthorization op = new DoAuthorization("" + w, "0514", 1);
+						String resp = null;
+						try {
+							resp = serv.handle(op);
+						} catch (Throwable t) {
+							throw new RuntimeException("An error has occured while handling '" + op + "'", t);
+						}
+						if (!"00".equals(resp)) throw new RuntimeException("Got '" + resp + "' instead of '00' while '" + op + "'");
 					}
-					if (!"00".equals(resp)) throw new RuntimeException("Got '" + resp + "' instead of '00' while '" + op + "'");
+				}
+
+				int getSize() {
+					return work.length;
 				}
 			};
 		}
+
 		return authorizations;
 	}
 
 	private static Operation[] planCardCreations(int nbCards) {
-		final Operation[] creations = new Operation[nbCards];
+		final int[] split = split(nbCards, PARALLELISM);
+		final int[][] cards = new int[split.length][];
+		{
+			int next = 0;
+			for (int i = 0; i < cards.length; i++) {
+				cards[i] = new int[split[i]];
+				for (int j = 0; j < cards[i].length; j++) {
+					cards[i][j] = next++;
+				}
+			}
+		}
+
+		final Operation[] creations = new Operation[cards.length];
 		for (int i = 0; i < creations.length; i++) {
-			final int j = i;
+			final int[] work = cards[i];
 			creations[i] = new Operation() {
-				@Override
 				public void run() {
-					CreateCard op = new CreateCard("" + j, "0514");
-					String resp = null;
-					try {
-						resp = serv.handle(op);
-					} catch (Throwable t) {
-						throw new RuntimeException("An error has occured while handling '" + op + "'", t);
+					for (int w : work) {
+						CreateCard op = new CreateCard("" + w, "0514");
+						String resp = null;
+						try {
+							resp = serv.handle(op);
+						} catch (Throwable t) {
+							throw new RuntimeException("An error has occured while handling '" + op + "'", t);
+						}
+						if (!"00".equals(resp)) throw new RuntimeException("Got '" + resp + "' instead of '00' while '" + op + "'");
 					}
-					if (!"00".equals(resp)) throw new RuntimeException("Got '" + resp + "' instead of '00' while '" + op + "'");
+				}
+
+				int getSize() {
+					return work.length;
 				}
 			};
 		}
+
+		// final Operation[] creations = new Operation[cards.length];
+		// for (int i = 0; i < creations.length; i++) {
+		// final int j = i;
+		// creations[i] = new Operation() {
+		// @Override
+		// public void run() {
+		// CreateCard op = new CreateCard("" + j, "0514");
+		// String resp = null;
+		// try {
+		// resp = serv.handle(op);
+		// } catch (Throwable t) {
+		// throw new RuntimeException("An error has occured while handling '" + op +
+		// "'", t);
+		// }
+		// if (!"00".equals(resp)) throw new RuntimeException("Got '" + resp +
+		// "' instead of '00' while '" + op + "'");
+		// }
+		// };
+		// }
 		return creations;
+	}
+
+	private static int[] split(int nbAuthorizations, int parallelism) {
+		int[] split = new int[parallelism];
+		if (nbAuthorizations <= parallelism) {
+			for (int i = 0; i < split.length; i++) {
+				split[i] = i < nbAuthorizations ? 1 : 0;
+			}
+		} else {
+			for (int i = 0; i < split.length; i++) {
+				split[i] = nbAuthorizations / parallelism;
+			}
+			split[0] += nbAuthorizations % parallelism;
+		}
+		return split;
 	}
 
 }

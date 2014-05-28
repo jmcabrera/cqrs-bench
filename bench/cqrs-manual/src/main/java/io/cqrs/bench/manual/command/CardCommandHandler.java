@@ -5,7 +5,6 @@ import io.cqrs.bench.api.DoAuthorization;
 import io.cqrs.bench.manual.domain.Card;
 import io.cqrs.bench.manual.domain.CardAlreadyExists;
 import io.cqrs.bench.manual.domain.CardRepository;
-import io.cqrs.bench.manual.domain.UnknownCard;
 
 public class CardCommandHandler {
 
@@ -28,14 +27,8 @@ public class CardCommandHandler {
 				return "60"; // Card unknown
 			}
 		} catch (Throwable t) {
+			t.printStackTrace();
 			return "99"; // TODO accomodate according to the protocol
-		} finally {
-			try {
-				CardRepository.update(card);
-			} catch (UnknownCard e) {
-				// should not happen
-				return "99"; // TODO accomodate according to the protocol
-			}
 		}
 	}
 

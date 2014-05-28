@@ -18,15 +18,6 @@ public class CardRepository {
 		REPO.put(key, card);
 	}
 
-	public static void update(Card card) throws UnknownCard {
-		if (null == card)
-			throw new UnknownCard(null);
-		String key = card.getPan() + "/" + card.getEmbossedDate();
-		if (!REPO.containsKey(key))
-			throw new UnknownCard(key);
-		REPO.put(key, card);
-	}
-
 	public static void delete(Card card) throws UnknownCard {
 		String key = card.getPan() + "/" + card.getEmbossedDate();
 		if (!REPO.containsKey(key))

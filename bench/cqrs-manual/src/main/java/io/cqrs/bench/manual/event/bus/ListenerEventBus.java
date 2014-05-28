@@ -23,6 +23,7 @@ abstract class ListenerEventBus extends EventBus {
 	}
 
 	protected void reloadListeners() {
+		System.out.println("Reloading listeners");
 		SERVICE_LOADER.reload();
 		Iterator<Listener> it = SERVICE_LOADER.iterator();
 		while (it.hasNext()) {

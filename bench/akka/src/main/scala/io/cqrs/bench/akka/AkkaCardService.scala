@@ -155,14 +155,14 @@ case class EventStore extends Actor {
 
   import java.io.{ PrintWriter, FileWriter, File }
 
-  var pw = new PrintWriter(new FileWriter(new File("storage.txt")))
+  var pw = new PrintWriter(new FileWriter(new File("storage.txt")), false)
 
   def receive = {
     case event: Event =>
       pw.println(event.toString())
     case Clear =>
       pw.close()
-      pw = new PrintWriter(new FileWriter(new File("storage.txt")))
+      pw = new PrintWriter(new FileWriter(new File("storage.txt")), false)
       sender ! Clear
     case Close =>
       pw.close()
