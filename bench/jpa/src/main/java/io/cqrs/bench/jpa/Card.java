@@ -8,6 +8,7 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.IdClass;
 import javax.persistence.NamedQuery;
+import javax.persistence.Version;
 
 @Entity
 @IdClass(CardId.class)
@@ -57,6 +58,9 @@ public class Card {
 
 	@Id
 	private String	embossedDate;
+
+	@Version
+	private long		version;
 
 	private long		authorizedAmount;
 
