@@ -1,11 +1,7 @@
 package io.cqrs.bench.akka
 
-import java.io.{ File, FileWriter, PrintWriter }
-
 import concurrent.{ Await, Future }
-
 import org.slf4j.LoggerFactory
-
 import akka.actor.{ Actor, ActorRef, ActorSystem, Props }
 import akka.pattern.ask
 import akka.routing.RoundRobinPool
@@ -153,16 +149,17 @@ case class EventBus extends Actor {
 
 case class EventStore extends Actor {
 
-  import java.io.{ PrintWriter, FileWriter, File }
+  import java.io.{ PrintWriter, FileWriter, File, FileOutputStream }
+  import java.util.zip.GZIPOutputStream
 
-  var pw = new PrintWriter(new FileWriter(new File("storage.txt")), false)
+  var pw = new PrintWriter(new GZIPOutputStream(new FileOutputStream(new File("akka-storage.gzip"))), false)
 
   def receive = {
     case event: Event =>
       pw.println(event.toString())
     case Clear =>
       pw.close()
-      pw = new PrintWriter(new FileWriter(new File("storage.txt")), false)
+      pw = new PrintWriter(new GZIPOutputStream(new FileOutputStream(new File("akka-storage.gzip"))), false)
       sender ! Clear
     case Close =>
       pw.close()

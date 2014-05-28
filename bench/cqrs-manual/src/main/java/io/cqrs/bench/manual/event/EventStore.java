@@ -1,10 +1,11 @@
 package io.cqrs.bench.manual.event;
 
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.zip.GZIPOutputStream;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -61,7 +62,7 @@ public class EventStore implements Listener {
 		closed.set(true);
 		close();
 		try {
-			pw = new PrintWriter(new FileWriter(new File("store.json")), false);
+			pw = new PrintWriter(new GZIPOutputStream(new FileOutputStream(new File("manual-storage.gzip"))), false);
 			sequence = 0;
 		} catch (IOException e) {
 			throw new RuntimeException(e);
