@@ -12,7 +12,7 @@ import javax.persistence.Version;
 
 @Entity
 @IdClass(CardId.class)
-@NamedQuery(name = "drop_all_cards", query = "DELETE FROM Card")
+@NamedQuery(name = "findAll", query = "SELECT c FROM Card c")
 public class Card {
 
 	public static final class CardId implements Serializable {

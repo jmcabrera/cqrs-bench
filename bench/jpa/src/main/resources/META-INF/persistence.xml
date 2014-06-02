@@ -3,7 +3,21 @@
   xsi:schemaLocation="
         http://java.sun.com/xml/ns/persistence
         http://java.sun.com/xml/ns/persistence/persistence_2_0.xsd">
-  <persistence-unit name="xarm">
+  <persistence-unit name="mysql">
+    <jta-data-source>mysqlDatabase</jta-data-source>
+    <non-jta-data-source>mysqlDatabaseNonJta</non-jta-data-source>
+    <class>io.cqrs.bench.jpa.Card</class>
+    <exclude-unlisted-classes>true</exclude-unlisted-classes>
+    <shared-cache-mode>ALL</shared-cache-mode>
+    <properties>
+      <property name="openjpa.Log" value="none" />
+      <property name="openjpa.jdbc.SchemaFactory" value="native(ForeignKeys=true)" />
+      <property name="openjpa.jdbc.SynchronizeMappings" value="buildSchema(ForeignKeys=true, SchemaAction='dropDB,add')" />
+    </properties>
+  </persistence-unit>
+  <persistence-unit name="inmem">
+    <jta-data-source>inmemDatabase</jta-data-source>
+    <non-jta-data-source>inmemDatabaseNonJta</non-jta-data-source>
     <class>io.cqrs.bench.jpa.Card</class>
     <exclude-unlisted-classes>true</exclude-unlisted-classes>
     <shared-cache-mode>ALL</shared-cache-mode>

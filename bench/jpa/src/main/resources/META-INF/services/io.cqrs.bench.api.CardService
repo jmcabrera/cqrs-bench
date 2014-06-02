@@ -1,1 +1,2 @@
-io.cqrs.bench.jpa.JPACardService
+#io.cqrs.bench.jpa.MySQLJPACardService
+io.cqrs.bench.jpa.InMemJPACardService

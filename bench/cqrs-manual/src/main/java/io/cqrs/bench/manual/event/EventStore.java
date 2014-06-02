@@ -7,22 +7,16 @@ import java.io.PrintWriter;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.GZIPOutputStream;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-
 public class EventStore implements Listener {
 
-	private static final EventStore		INSTANCE	= new EventStore();
+	private static final EventStore	INSTANCE	= new EventStore();
 
-	private static final ObjectMapper	MAPPER		= new ObjectMapper();
 	static {
-		MAPPER.configure(SerializationFeature.WRAP_ROOT_VALUE, true);
 		EventBus.register(INSTANCE);
 	}
 
-	private PrintWriter								pw				= null;
-	int																sequence	= 0;
+	private PrintWriter							pw				= null;
+	int															sequence	= 0;
 
 	private EventStore() {
 		_restart();
@@ -33,12 +27,7 @@ public class EventStore implements Listener {
 	@Override
 	public void handle(Event event) {
 		if (closed.get()) throw new RuntimeException("Event store closed");
-
-		try {
-			pw.println((sequence++) + MAPPER.writeValueAsString(event));
-		} catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
+		pw.println((sequence++) + event.toString());
 	}
 
 	@Override

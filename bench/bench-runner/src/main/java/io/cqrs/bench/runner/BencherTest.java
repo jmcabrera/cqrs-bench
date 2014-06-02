@@ -118,7 +118,6 @@ public class BencherTest {
 		Operation[] cards = planCardCreations(nbCards);
 		Operation[] auths = planAuthorizations(nbAuths, nbCards);
 		for (CardService cs : ServiceLoader.load(CardService.class)) {
-			System.out.println("gc");
 			System.gc();
 			cs.start();
 			System.out.printf("\n---- %8s ------------------------------------------------------------\n", cs.getName());

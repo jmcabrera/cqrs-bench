@@ -69,6 +69,7 @@
             <argument>-Xmx2g</argument>
             <argument>-Xms2g</argument>
             <argument>-classpath</argument>
+            <argument>-verbose:gc</argument>
             <classpath />
             <argument>io.cqrs.bench.runner.BencherTest</argument>
             <argument>-c</argument>
