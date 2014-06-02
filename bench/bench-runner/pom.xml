@@ -59,12 +59,25 @@
         <executions>
           <execution>
             <goals>
-              <goal>java</goal>
+              <goal>exec</goal>
             </goals>
           </execution>
         </executions>
         <configuration>
-          <mainClass>io.cqrs.bench.runner.BencherTest</mainClass>
+          <executable>java</executable>
+          <arguments>
+            <argument>-Xmx2g</argument>
+            <argument>-Xms2g</argument>
+            <argument>-classpath</argument>
+            <classpath />
+            <argument>io.cqrs.bench.runner.BencherTest</argument>
+            <argument>-c</argument>
+            <argument>1000</argument>
+            <argument>-a</argument>
+            <argument>10000</argument>
+            <argument>-t</argument>
+            <argument>8</argument>
+          </arguments>
         </configuration>
       </plugin>
     </plugins>
