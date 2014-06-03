@@ -154,21 +154,37 @@ case class EventStore extends Actor {
 
   var pw = new PrintWriter(new GZIPOutputStream(new FileOutputStream(new File("akka-storage.gzip"))), false)
 
+  var seq = 0
+
   def receive = {
     case event: Event =>
-      pw.println(event.toString())
+      pw.println(seq + event.toString())
+      seq = seq + 1
     case Clear =>
       pw.close()
       pw = new PrintWriter(new GZIPOutputStream(new FileOutputStream(new File("akka-storage.gzip"))), false)
+      seq = 0
       sender ! Clear
     case Close =>
       pw.close()
+      seq = 0
       sender ! Close
   }
 
 }
 
-sealed trait Event
-case class CardCreated(pan: String, embossedDate: String) extends Event
-case class CardDeleted(pan: String, embossedDate: String) extends Event
-case class Authorized(pan: String, embossedDate: String, authorizedAmount: Long) extends Event
+sealed trait Event {
+  def ts: Long
+}
+object CardCreated {
+  def apply(pan: String, embossedDate: String) = new CardCreated(pan, embossedDate, System.currentTimeMillis());
+}
+case class CardCreated(pan: String, embossedDate: String, ts: Long) extends Event
+object CardDeleted {
+  def apply(pan: String, embossedDate: String) = new CardDeleted(pan, embossedDate, System.currentTimeMillis());
+}
+case class CardDeleted(pan: String, embossedDate: String, ts: Long) extends Event
+object Authorized {
+  def apply(pan: String, embossedDate: String, authorizedAmount: Long) = new Authorized(pan, embossedDate, authorizedAmount, System.currentTimeMillis());
+}
+case class Authorized(pan: String, embossedDate: String, authorizedAmount: Long, ts: Long) extends Event

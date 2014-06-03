@@ -13,7 +13,7 @@ public class Authorized extends Event {
 		this.pan = pan;
 		this.embossedDate = embossedDate;
 		this.amount = amount;
-		this.toString = "Authorized(pan='" + pan + "',embossed='" + embossedDate + "',amount='" + amount + "')";
+		this.toString = "Authorized(" + pan + "," + embossedDate + "," + amount + "," + timestamp + ")";
 	}
 
 	public String getPan() {

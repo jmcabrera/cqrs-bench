@@ -206,12 +206,12 @@ public class BencherTest {
 				frep.format(" %7s:\n", e.getKey());
 				for (CardService cs : e.getValue()) {
 					Class<? extends CardService> clazz = cs.getClass();
-					frep.format("---/!\\--->%20s from %s\n", clazz.getSimpleName(), clazz.getPackage().getName());
+					frep.format("---/!\\--->%25s from %s\n", clazz.getSimpleName(), clazz.getPackage().getName());
 				}
 			} else {
 				CardService cs = e.getValue().get(0);
 				Class<? extends CardService> clazz = cs.getClass();
-				frep.format(" %7s: %20s from %s\n", e.getKey(), clazz.getSimpleName(), clazz.getPackage().getName());
+				frep.format(" %7s: %25s from %s\n", e.getKey(), clazz.getSimpleName(), clazz.getPackage().getName());
 			}
 		}
 		String rep = frep.out().toString();
