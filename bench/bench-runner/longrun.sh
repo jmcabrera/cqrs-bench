@@ -1,4 +1,5 @@
 #!/bin/bash
+rm -f *.gzip
 repo="D:\mvn.repo"
 java \
 -Dcom.sun.management.jmxremote.port=3333 -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false \
