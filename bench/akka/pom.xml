@@ -11,9 +11,9 @@
     <maven.compiler.source>1.7</maven.compiler.source>
     <maven.compiler.target>1.7</maven.compiler.target>
     <encoding>UTF-8</encoding>
-    <scala.major>2.10</scala.major>
-    <scala.minor>4</scala.minor>
-    <akka.version>2.3.3</akka.version>
+    <scala.major>2.11</scala.major>
+    <scala.minor>1</scala.minor>
+    <akka.version>2.3.4</akka.version>
   </properties>
   <build>
     <sourceDirectory>src/main/scala</sourceDirectory>
