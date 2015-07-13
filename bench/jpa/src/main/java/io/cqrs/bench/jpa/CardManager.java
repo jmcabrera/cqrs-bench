@@ -17,21 +17,13 @@ public abstract class CardManager {
 
 	@TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
 	public void authorize(String pan, String embossedDate, long amount) {
-//		int retry = 5;
-//		while (retry > 0) {
-			try {
-				Card c = getEm().find(Card.class, new CardId(pan, embossedDate));
-				c.setAuthorizedAmount(c.getAuthorizedAmount() + amount);
-				getEm().flush();
-				return;
-			} catch (NullPointerException | OptimisticLockException e) {
-//				if (retry < 4) {
-//					System.out.println("[" + retry + "] retrying pan " + pan);
-//				}
-			}
-//			retry--;
-//		}
-//		throw new RuntimeException("Aborting after 5 retries");
+		try {
+			Card c = getEm().find(Card.class, new CardId(pan, embossedDate));
+			c.setAuthorizedAmount(c.getAuthorizedAmount() + amount);
+			getEm().flush();
+			return;
+		}
+		catch (NullPointerException | OptimisticLockException e) {}
 	}
 
 	@TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
